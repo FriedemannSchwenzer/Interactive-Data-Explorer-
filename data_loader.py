@@ -89,12 +89,16 @@ def load_raw(path: str, year: int) -> pd.DataFrame:
     df["Year"] = int(year)
     return df
 
-
 def load_raw_multiple(files: dict) -> pd.DataFrame:
     """Load multiple Parquet files and combine into one DataFrame."""
-    dfs = [load_raw(path, year) for year, path in files.items()]
+    dfs = []
+    for year, paths in files.items():
+        if isinstance(paths, list):  # if multiple parts (e.g. 2024 split)
+            for path in paths:
+                dfs.append(load_raw(path, year))
+        else:
+            dfs.append(load_raw(paths, year))
     return pd.concat(dfs, ignore_index=True)
-
 
 def clean_data(raw: pd.DataFrame, year: int) -> pd.DataFrame:
     """Clean one year of raw data, keep both borrowings (A) and renewals (T)."""
@@ -107,25 +111,19 @@ def clean_data(raw: pd.DataFrame, year: int) -> pd.DataFrame:
         .rename(columns=RENAME_COLS)
     )
 
-    # Cast categories
     for col in [
         "Media Type", "Gender", "Genre", "Age Group",
         "Target Group", "User Group", "Library"
     ]:
         df[col] = df[col].astype("category")
 
-    # Month to int → mapped to month names
     df["Month"] = df["Month"].astype(int)
-    df["Month"] = df["Month"].map(MONTH_NAME_MAP)
-    df["Month"] = pd.Categorical(df["Month"], categories=MONTH_ORDER, ordered=True)
 
-    # Age Group adjustments
     df["Age Group"] = df["Age Group"].cat.rename_categories(
         lambda x: "80+" if x == "ab 80" else x
     )
     df["Age Group"] = pd.Categorical(df["Age Group"], categories=AGE_ORDER, ordered=True)
 
-    # Rename categories with translations
     df["Media Type"]   = df["Media Type"].cat.rename_categories(MEDIA_TYPE_TRANSLATION)
     df["Gender"]       = df["Gender"].cat.rename_categories(GENDER_TRANSLATION)
     df["Genre"]        = df["Genre"].cat.rename_categories(GENRE_TRANSLATION)
@@ -133,18 +131,23 @@ def clean_data(raw: pd.DataFrame, year: int) -> pd.DataFrame:
     df["User Group"]   = df["User Group"].cat.rename_categories(USER_GROUP_TRANSLATION)
     df["Library"]      = df["Library"].cat.rename_categories(LIBRARIES)
 
+    df["Month"] = df["Month"].map(MONTH_NAME_MAP)
+    df["Month"] = pd.Categorical(df["Month"], categories=MONTH_ORDER, ordered=True)
+
     df["Year"] = int(year)
 
     return df
 
-
 def load_and_clean_multiple(files: dict) -> pd.DataFrame:
-    """Load and clean multiple datasets, given {year: path} mapping."""
+    """Load and clean multiple datasets, given {year: path(s)} mapping."""
     cleaned_multiple_years = []
-    for year, path in files.items():
-        raw = load_raw(path, year)
+    for year, paths in files.items():
+        raws = []
+        if isinstance(paths, list):
+            raws = [load_raw(path, year) for path in paths]
+        else:
+            raws = [load_raw(paths, year)]
+        raw = pd.concat(raws, ignore_index=True)
         cleaned = clean_data(raw, year)
         cleaned_multiple_years.append(cleaned)
     return pd.concat(cleaned_multiple_years, ignore_index=True)
-
-
