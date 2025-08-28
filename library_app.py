@@ -129,6 +129,8 @@ with col_right:
         unsafe_allow_html=True
     )
 
+# --- Seperation line --- 
+st.markdown("---")
 
 # -------------------
 # Input for Lists and Charts 
