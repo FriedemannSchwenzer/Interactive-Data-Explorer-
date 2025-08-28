@@ -4,7 +4,6 @@ import pandas as pd
 import altair as alt
 from data_loader import load_and_clean_multiple, AGE_ORDER
 import elements as el
-from st_aggrid import AgGrid, GridOptionsBuilder
 
 
 # --- File paths ---
@@ -106,38 +105,29 @@ with col_left:
     st.metric("Renewals", f"{total_renewals:,}".replace(",", "."))
 
 with col_right:
-    # Prepare the dataframe
     df_display = (
         df_filtered[df_filtered["Type of Transaction"] == "A"]
         .dropna(subset=["Title"])
         .drop(columns=["Type of Transaction"], errors="ignore")
         .assign(Year=df_filtered["Year"].astype(str))
         .reset_index(drop=True)
+        .head(1000)   # <-- limit to 1000 rows
     )
 
-    # Build AgGrid options
-    gb = GridOptionsBuilder.from_dataframe(df_display)
-    gb.configure_pagination(paginationAutoPageSize=True)  # auto page size
-    gb.configure_side_bar()  # filtering / grouping sidebar
-    gb.configure_default_column(
-        resizable=True,
-        filter=True,
-        sortable=True,
-        editable=False
+    st.dataframe(df_display)
+
+    st.markdown(
+        """
+        <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
+        Showing only the first 1000 rows for performance reasons.  
+        Each row represents one borrowing transaction.  
+        The data was cleaned and translated by the author of this app.  
+        Focus is on borrowings only — renewals and failed transactions are excluded.  
+        An available-case-analysis approach (ACA) is applied. 
+        </p>
+        """,
+        unsafe_allow_html=True
     )
-
-    grid_options = gb.build()
-
-    # Render AgGrid
-    AgGrid(
-        df_display,
-        gridOptions=grid_options,
-        enable_enterprise_modules=False,
-        theme="streamlit",  # other options: "light", "dark", "alpine"
-        height=400,
-        fit_columns_on_grid_load=True
-    )
-
 
 
 # -------------------
