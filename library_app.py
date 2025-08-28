@@ -8,8 +8,8 @@ import elements as el
 
 # --- File paths ---
 files = {
-    2022: "data/Pankow_2022.parquet",
-    2024: "data/Pankow_2024_utf8.parquet",
+    2022: "Pankow_2022.parquet",
+    2024: "Pankow_2024_utf8.parquet",
 }
 
 # --- Page config ---
