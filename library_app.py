@@ -127,7 +127,6 @@ with col_right:
         """
         <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
         This is a sample of 100 randomly chosen borrowings from the subset you created based on your selections.  
-        
         The charts you see below show borrowings only. Renewals and failed transactions are excluded. The datasets were cleaned and translated by the author of this app.    
         </p>
         """,
