@@ -114,34 +114,23 @@ with col_right:
         .reset_index(drop=True)
     )
 
-    # Add a refresh button
-    if st.button("🔄 Refresh sample"):
-        st.session_state["refresh_sample"] = True
-
-    # Default state
-    if "refresh_sample" not in st.session_state:
-        st.session_state["refresh_sample"] = True
-
-    # Only take a new sample if refresh pressed
-    if st.session_state["refresh_sample"]:
+    # Initialize session state for sample
+    if "df_sample" not in st.session_state:
         if len(df_display) > 100:
-            df_display = df_display.sample(n=100, random_state=None).reset_index(drop=True)
+            st.session_state.df_sample = df_display.sample(n=100, random_state=None).reset_index(drop=True)
         else:
-            df_display = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
-        st.session_state["refresh_sample"] = False  # reset so it doesn't re-sample on every rerun
+            st.session_state.df_sample = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
 
-    # Display without index
-    st.dataframe(df_display.style.hide(axis="index"))
+    # Display the sample (without index)
+    st.dataframe(st.session_state.df_sample.style.hide(axis="index"))
 
-    st.markdown(
-        """
-        <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
-        Displaying 100 randomly chosen borrowings (or all if fewer available).  
-        Click <b>Refresh sample</b> to draw a new set.  
-        </p>
-        """,
-        unsafe_allow_html=True
-    )
+    # Small refresh button below
+    if st.button("↻ Refresh sample", key="refresh_sample", help="Click to redraw 100 random borrowings"):
+        if len(df_display) > 100:
+            st.session_state.df_sample = df_display.sample(n=100, random_state=None).reset_index(drop=True)
+        else:
+            st.session_state.df_sample = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
+        st.experimental_rerun()
 
 
 # --- Seperation line --- 
