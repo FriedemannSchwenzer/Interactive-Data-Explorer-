@@ -160,21 +160,24 @@ gender_chart = el.make_gender_chart(borrowings)
 
 
 # -------------------
-# Row 2 → Demographics (who borrows?)
+# Row 1 → Demographics (who borrows?)
 # -------------------
 col4, space, col5, space, col6 = st.columns([1, 0.1, 1.5, 0.1, 1.5])
 
 with col4:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 Authors ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     for author in authors_list:
         st.markdown(f"<p style='color:#363062; font-size:14px;'>{author}</p>", unsafe_allow_html=True)
 
 with col5:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Target Group ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(target_chart, use_container_width=True)
 
 with col6:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Gender ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(gender_chart, use_container_width=True)
 
 st.markdown("---")
@@ -183,7 +186,7 @@ st.markdown("---")
 
 
 # -------------------
-# Row 1 → Collection / Materials
+# Row 2 → Collection / Materials
 # -------------------
 col1, space,  col3, space, col2,= st.columns([1, 0.1, 1.5, 0.1, 1.5])
 
@@ -196,10 +199,12 @@ with col1:
 
 with col3:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Genre ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(genre_chart, use_container_width=True)
 
 with col2:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Media Type ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(media_chart, use_container_width=True)
 
     
@@ -215,15 +220,18 @@ col7, space, col8, space, col9 = st.columns([1, 0.1, 1.5, 0.1, 1.5])
 
 with col7:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 CDs ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     for cd in cds_list:
         st.markdown(f"<p style='color:#363062; font-size:14px;'>{cd}</p>", unsafe_allow_html=True)
 
 with col8:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Age Group ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(age_chart, use_container_width=True)
 
 with col9:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by User Group ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(user_chart, use_container_width=True)
 
 st.markdown("---")
@@ -236,15 +244,18 @@ col10, space, col11, space, col12 = st.columns([1, 0.1, 1.5, 0.1, 1.5])
 
 with col10:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 DVDs ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     for dvd in dvds_list:
         st.markdown(f"<p style='color:#363062; font-size:14px;'>{dvd}</p>", unsafe_allow_html=True)
 
 with col11:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Library ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(library_chart, use_container_width=True)
 
 with col12:
     st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Month ({el.format_years(years_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
     st.altair_chart(month_chart, use_container_width=True)
 
 st.markdown("---")
