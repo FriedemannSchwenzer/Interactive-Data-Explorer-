@@ -113,17 +113,17 @@ with col_right:
         .assign(Year=df_filtered["Year"].astype(str))
         .reset_index(drop=True)   # reset index
     )
-    
+
     # Take a random sample of up to 100 rows
     if len(df_display) > 100:
         df_display = df_display.sample(n=100, random_state=None).reset_index(drop=True)
     else:
         df_display = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
-    
+
     # Hide the index by dropping it
     st.dataframe(df_display.style.hide(axis="index"))
-    
-     st.markdown(
+
+    st.markdown(
         """
         <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
         This is a sample of 100 randomly chosen borrowings from the subset you created based on your selections.  
@@ -131,9 +131,7 @@ with col_right:
         </p>
         """,
         unsafe_allow_html=True
-)
-
-
+    )
 
 
 # --- Seperation line --- 
