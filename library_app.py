@@ -111,23 +111,33 @@ with col_right:
         .dropna(subset=["Title"])
         .drop(columns=["Type of Transaction"], errors="ignore")
         .assign(Year=df_filtered["Year"].astype(str))
-        .reset_index(drop=True)   # reset index
+        .reset_index(drop=True)
     )
 
-    # Take a random sample of up to 100 rows
-    if len(df_display) > 100:
-        df_display = df_display.sample(n=100, random_state=None).reset_index(drop=True)
-    else:
-        df_display = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
+    # Add a refresh button
+    if st.button("🔄 Refresh sample"):
+        st.session_state["refresh_sample"] = True
 
-    # Hide the index by dropping it
+    # Default state
+    if "refresh_sample" not in st.session_state:
+        st.session_state["refresh_sample"] = True
+
+    # Only take a new sample if refresh pressed
+    if st.session_state["refresh_sample"]:
+        if len(df_display) > 100:
+            df_display = df_display.sample(n=100, random_state=None).reset_index(drop=True)
+        else:
+            df_display = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
+        st.session_state["refresh_sample"] = False  # reset so it doesn't re-sample on every rerun
+
+    # Display without index
     st.dataframe(df_display.style.hide(axis="index"))
 
     st.markdown(
         """
         <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
         Displaying 100 randomly chosen borrowings (or all if fewer available).  
-        The sample updates automatically based on your selections.  
+        Click <b>Refresh sample</b> to draw a new set.  
         </p>
         """,
         unsafe_allow_html=True
