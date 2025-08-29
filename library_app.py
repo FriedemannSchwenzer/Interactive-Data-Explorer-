@@ -114,23 +114,25 @@ with col_right:
         .reset_index(drop=True)
     )
 
-    # Initialize session state for sample
-    if "df_sample" not in st.session_state:
-        if len(df_display) > 100:
-            st.session_state.df_sample = df_display.sample(n=100, random_state=None).reset_index(drop=True)
-        else:
-            st.session_state.df_sample = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
+    # Take a random sample of up to 100 rows from the filtered set
+    if len(df_display) > 100:
+        df_display = df_display.sample(n=100, random_state=None)  # random_state=None -> new sample each rerun
+    else:
+        df_display = df_display.sample(frac=1, random_state=None)  # shuffle all if fewer than 100
 
-    # Display the sample (without index)
-    st.dataframe(st.session_state.df_sample.style.hide(axis="index"))
+    # Show the sampled dataframe
+    st.dataframe(df_display)
 
-    # Small refresh button below
-    if st.button("↻ Refresh sample", key="refresh_sample", help="Click to redraw 100 random borrowings"):
-        if len(df_display) > 100:
-            st.session_state.df_sample = df_display.sample(n=100, random_state=None).reset_index(drop=True)
-        else:
-            st.session_state.df_sample = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
-        st.experimental_rerun()
+    st.markdown(
+        """
+        <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
+        This is a sample of 100 randomly chosen borrowings from the subset you created based on your selections.  
+        
+        The charts you see below show borrowings only. Renewals and failed transactions are excluded. The datasets were cleaned and translated by the author of this app.    
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # --- Seperation line --- 
