@@ -111,17 +111,17 @@ with col_right:
         .dropna(subset=["Title"])
         .drop(columns=["Type of Transaction"], errors="ignore")
         .assign(Year=df_filtered["Year"].astype(str))
-        .reset_index(drop=True)
+        .reset_index(drop=True)   # reset index
     )
 
-    # Take a random sample of up to 100 rows from the filtered set
+    # Take a random sample of up to 100 rows
     if len(df_display) > 100:
-        df_display = df_display.sample(n=100, random_state=None)  # random_state=None -> new sample each rerun
+        df_display = df_display.sample(n=100, random_state=None).reset_index(drop=True)
     else:
-        df_display = df_display.sample(frac=1, random_state=None)  # shuffle all if fewer than 100
+        df_display = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
 
-    # Show the sampled dataframe
-    st.dataframe(df_display)
+    # Hide the index by dropping it
+    st.dataframe(df_display.style.hide(axis="index"))
 
     st.markdown(
         """
