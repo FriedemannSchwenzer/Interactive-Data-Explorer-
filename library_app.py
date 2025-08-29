@@ -46,7 +46,7 @@ st.markdown(
 st.markdown("---")
 
 # --- Loading and caching data & spinner ---
-@st.cache_data(show_spinner=False)
+@st.cache_data(ttl=3600,show_spinner=False )
 def cached_load_and_clean_multiple(files: dict) -> pd.DataFrame:
     return load_and_clean_multiple(files)
 
