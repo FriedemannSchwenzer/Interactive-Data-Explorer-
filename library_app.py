@@ -105,29 +105,34 @@ with col_left:
     st.metric("Renewals", f"{total_renewals:,}".replace(",", "."))
 
 with col_right:
+    # Subset borrowings
     df_display = (
         df_filtered[df_filtered["Type of Transaction"] == "A"]
         .dropna(subset=["Title"])
         .drop(columns=["Type of Transaction"], errors="ignore")
         .assign(Year=df_filtered["Year"].astype(str))
         .reset_index(drop=True)
-        .sample(n=100, random_state=42)   # <-- pick 100 random rows
     )
 
+    # Take a random sample of up to 100 rows from the filtered set
+    if len(df_display) > 100:
+        df_display = df_display.sample(n=100, random_state=None)  # random_state=None -> new sample each rerun
+    else:
+        df_display = df_display.sample(frac=1, random_state=None)  # shuffle all if fewer than 100
+
+    # Show the sampled dataframe
     st.dataframe(df_display)
 
     st.markdown(
         """
         <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
-        Showing 100 randomly selected borrowings for performance reasons.  
-        Each row represents one borrowing transaction.  
-        The data was cleaned and translated by the author of this app.  
-        Focus is on borrowings only — renewals and failed transactions are excluded.  
-        An available-case-analysis approach (ACA) is applied. 
+        Displaying 100 randomly chosen borrowings (or all if fewer available).  
+        The sample updates automatically based on your selections.  
         </p>
         """,
         unsafe_allow_html=True
     )
+
 
 # --- Seperation line --- 
 st.markdown("---")
