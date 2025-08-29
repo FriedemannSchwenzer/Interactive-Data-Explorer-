@@ -111,7 +111,7 @@ with col_right:
         .drop(columns=["Type of Transaction"], errors="ignore")
         .assign(Year=df_filtered["Year"].astype(str))
         .reset_index(drop=True)
-        .head(500)   # <-- limit to 1000 rows
+        .sample(n=100, random_state=42)   # <-- pick 100 random rows
     )
 
     st.dataframe(df_display)
@@ -119,7 +119,7 @@ with col_right:
     st.markdown(
         """
         <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
-        Showing only the first 500 rows for performance reasons.  
+        Showing 100 randomly selected borrowings for performance reasons.  
         Each row represents one borrowing transaction.  
         The data was cleaned and translated by the author of this app.  
         Focus is on borrowings only — renewals and failed transactions are excluded.  
