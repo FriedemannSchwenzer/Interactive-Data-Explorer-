@@ -1,5 +1,5 @@
 # elements.py
-iimport pandas as pd
+import pandas as pd
 import altair as alt
 from data_loader import load_and_clean_multiple, AGE_ORDER
 
