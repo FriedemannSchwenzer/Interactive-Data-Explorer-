@@ -6,11 +6,11 @@ from data_loader import load_and_clean_multiple, AGE_ORDER
 import elements as el
 
 
+# --- File paths ---
 files = {
-    2022: ["Pankow_2022.parquet"],
-    2024: ["Pankow_2024_part1.parquet", "Pankow_2024_part2.parquet"],
+    2022: ["data/Pankow_2022.parquet"],
+    2024: ["data/Pankow_2024_part1.parquet", "data/Pankow_2024_part2.parquet"],
 }
-
 
 # --- Page config ---
 st.set_page_config(
@@ -42,20 +42,46 @@ st.markdown(
 st.markdown("---")
 
 # -------------------
-# Sidebar: Year selection (SINGLE CHOICE)
+# Sidebar placeholders and headers
 # -------------------
-year_selected = st.sidebar.radio(
+with st.sidebar:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    st.header("Year")
+    year_placeholder = st.empty()
+
+    st.header("Library")
+    library_placeholder = st.empty()
+
+    st.markdown("---")
+    info_placeholder = st.empty()
+
+# -------------------
+# Year selection (SINGLE CHOICE)
+# -------------------
+year_selected = year_placeholder.radio(
     "Select year to explore:",
     options=[2022, 2024],
     index=1,   # default = 2024
 )
 
 # -------------------
-# Caching per year
+# Clear cache if user switches year
+# -------------------
+if "last_year" not in st.session_state:
+    st.session_state["last_year"] = year_selected
+elif st.session_state["last_year"] != year_selected:
+    st.cache_data.clear()  # drop cached data from previous year
+    st.session_state["last_year"] = year_selected
+
+# -------------------
+# Caching for the current year only
 # -------------------
 @st.cache_data(ttl=3600, show_spinner=False)
 def cached_load_and_clean(year: int, paths: list) -> pd.DataFrame:
-    """Load and clean data for a single year only."""
     return load_and_clean_multiple({year: paths})
 
 # -------------------
@@ -65,22 +91,22 @@ with st.spinner(f"Loading library data for {year_selected}..."):
     cleaned_df = cached_load_and_clean(year_selected, files[year_selected])
 
 # -------------------
-# Sidebar: Library filter (now based on cleaned_df)
+# Library filter (now based on cleaned_df)
 # -------------------
 years, libraries = el.get_sidebar_options(cleaned_df)
 
-libraries_selected = st.sidebar.multiselect(
-    "Select library/libraries to view:",
-    options=libraries,
-    default=libraries,
-    label_visibility="visible",
-    placeholder="Choose libraries...",
-    key="library_multiselect",
-    help="Pick one or more libraries to filter the data",
-)
+options = ["All Libraries"] + libraries
+choice = library_placeholder.selectbox("Choose Library:", options)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown(
+if choice == "All Libraries":
+    libraries_selected = libraries
+else:
+    libraries_selected = [choice]
+
+# -------------------
+# Info link at bottom
+# -------------------
+info_placeholder.markdown(
     "Please head over to the [Berlin Open Data Portal]"
     "(https://daten.berlin.de/datensaetze/ausleihen-in-offentlichen-bibliotheken-in-pankow-2022) "
     "to get more information about the datasets and download the raw files."
@@ -95,12 +121,21 @@ df_filtered = cleaned_df[
 ]
 
 # --- KPI Layout, KPI and Dataframe imported from charts_lists_frames.py  ---
-spacing, col_left, col_right = st.columns([0.1, 1, 5])
+spacing, col_left, col_right = st.columns([0.1, 2, 5])
 
 with col_left:
     num_libraries, total_borrowings, total_renewals = el.show_kpis(df_filtered)
     st.metric(" ", " ")
-    st.metric("Libraries", f"{num_libraries}")
+    
+    # 🟢 Smarter display logic for the "Libraries" KPI
+    if choice == "All":
+        lib_label = "8 Pankow District Libraries"
+    elif len(libraries_selected) == 1:
+        lib_label = libraries_selected[0]
+    else:
+        lib_label = f"{len(libraries_selected)} libraries"
+    
+    st.metric("Library/ Libraries", lib_label)
     st.metric("Borrowings", f"{total_borrowings:,}".replace(",", "."))
     st.metric("Renewals", f"{total_renewals:,}".replace(",", "."))
 
@@ -243,19 +278,41 @@ st.markdown("---")
 col10, space, col11, space, col12 = st.columns([1, 0.1, 1.5, 0.1, 1.5])
 
 with col10:
-    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 DVDs ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
-    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 DVDs ({el.format_year(year_selected)})</div>", 
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", 
+        unsafe_allow_html=True
+    )
     for dvd in dvds_list:
         st.markdown(f"<p style='color:#363062; font-size:14px;'>{dvd}</p>", unsafe_allow_html=True)
 
 with col11:
-    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Library ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
-    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
-    st.altair_chart(library_chart, use_container_width=True)
-
-with col12:
-    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Month ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
-    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Month ({el.format_year(year_selected)})</div>", 
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", 
+        unsafe_allow_html=True
+    )
     st.altair_chart(month_chart, use_container_width=True)
 
+# Show this block only if "All Libraries" is selected
+if choice == "All Libraries":
+    with col12:
+        st.markdown(
+            f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Library ({el.format_year(year_selected)})</div>", 
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", 
+            unsafe_allow_html=True
+        )
+        st.altair_chart(library_chart, use_container_width=True)
+
 st.markdown("---")
+
+
