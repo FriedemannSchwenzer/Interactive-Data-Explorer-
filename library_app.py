@@ -15,23 +15,57 @@ files = {
     ],
 }
 
-# --- Sidebar: Year selection (default = 2024) ---
-year_selected = st.sidebar.radio(
-    "Choose a year to explore:",
-    options=list(files.keys()),
-    index=list(files.keys()).index(2024)  # preselect 2024
+# --- Page config ---
+st.set_page_config(
+    page_title="Pankow Libraries: Data Explorer",
+    layout="wide"
 )
 
-# --- Load only the selected year ---
-@st.cache_data(ttl=3600, show_spinner=False)
-def cached_load_and_clean(year, files):
-    return load_and_clean_multiple({year: files[year]})
+# --- Title + Intro ---
+st.markdown("<h1>Pankow Libraries: Interactive Data Explorer</h1>", unsafe_allow_html=True)
 
-with st.spinner(f"Loading library data for {year_selected}..."):
-    cleaned_df = cached_load_and_clean(year_selected, files)
+st.markdown(
+    """
+   Curious about what people take home from public libraries? Or who’s flocking to the libraries — and when shelves get the busiest? 
+   Dive into this dashboard to explore borrowing data from the eight public libraries in Berlin’s Pankow district. 
+    """,
+    unsafe_allow_html=True
+)
 
-# --- Sidebar: Library selection ---
-libraries = sorted(cleaned_df["Library"].dropna().unique().tolist())
+st.markdown(
+    """
+    <p style='color:#6E6E6E; font-size:13px; margin-bottom:0px;'>
+    Use the filters on the left to select or deselect years and libraries. 
+    The data and charts update dynamically upon your selections!
+    </p>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Seperation line --- 
+st.markdown("---")
+
+# --- Loading and caching data & spinner ---
+@st.cache_data(ttl=3600,show_spinner=False )
+def cached_load_and_clean_multiple(files: dict) -> pd.DataFrame:
+    return load_and_clean_multiple(files)
+
+with st.spinner("Loading some exciting but heavy data from Pankow's libraries..."):
+    cleaned_df = cached_load_and_clean_multiple(files)
+    
+    
+# -------------------
+# Sidebar & Filtering 
+# -------------------
+
+years, libraries = el.get_sidebar_options(cleaned_df)
+
+years_selected = st.sidebar.multiselect(
+    "Select year(s) to view:",
+    options=years,
+    default=years,
+)
+
 libraries_selected = st.sidebar.multiselect(
     "Select library/libraries to view:",
     options=libraries,
@@ -42,16 +76,22 @@ libraries_selected = st.sidebar.multiselect(
     help="Pick one or more libraries to filter the data",
 )
 
+# --- Seperation line --- 
 st.sidebar.markdown("---")
 
 st.sidebar.markdown(
-    "Please head over to the [Berlin Open Data Portal] "
+    "Please head over to the [Berlin Open Data Portal]"
     "(https://daten.berlin.de/datensaetze/ausleihen-in-offentlichen-bibliotheken-in-pankow-2022) "
     "to get more information about the datasets and download the raw files."
 )
 
-# --- Apply filter ---
-df_filtered = cleaned_df[cleaned_df["Library"].isin(libraries_selected)]
+# Applying the filter 
+df_filtered = cleaned_df[
+    cleaned_df["Year"].isin(years_selected) &
+    cleaned_df["Library"].isin(libraries_selected)
+]
+
+
 
 
 # --- KPI Layout, KPI and Dataframe imported from charts_lists_frames.py  ---
