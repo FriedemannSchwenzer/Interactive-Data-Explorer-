@@ -112,24 +112,36 @@ def make_bar_chart(df, category_field, color="#363062", sort="-y", height=300, w
     )
 
 
-def make_horizontal_bar_chart(df, category_field, color="#363062", sort="-x", height=300, width=300, order=None):
+def make_horizontal_bar_chart(
+    df, category_field, color="#363062", sort="-x", height=300, width=300, order=None
+):
     """Horizontal bar chart showing relative frequencies."""
     df = df.copy()
     df["Relative"] = df["Count"] / df["Count"].sum()
+
+    # auto-adjust height so labels never overlap
+    height = max(height, len(df) * 25)
 
     return (
         alt.Chart(df)
         .mark_bar(color=color)
         .encode(
-            y=alt.Y(category_field,
-                    type="nominal",
-                    sort=order or sort,
-                    title=None,
-                    axis=alt.Axis(labelColor="#363062")),
-            x=alt.X("Relative",
-                    type="quantitative",
-                    axis=alt.Axis(format="%", title=None, labelColor="#363062"),
-                    scale=alt.Scale(domain=[0, 1])),
+            y=alt.Y(
+                category_field,
+                type="nominal",
+                sort=order or sort,
+                title=None,
+                axis=alt.Axis(
+                    labelColor="#363062",
+                    labelOverlap=False   # 👈 force showing all labels
+                )
+            ),   # 👈 missing comma fixed here!
+            x=alt.X(
+                "Relative",
+                type="quantitative",
+                axis=alt.Axis(format="%", title=None, labelColor="#363062"),
+                scale=alt.Scale(domain=[0, 1])
+            ),
             tooltip=[
                 alt.Tooltip(category_field, title=category_field),
                 alt.Tooltip("Relative", type="quantitative", format=".1%", title="Relative (%)"),
@@ -139,39 +151,6 @@ def make_horizontal_bar_chart(df, category_field, color="#363062", sort="-x", he
         .properties(height=height, width=width)
     )
 
-
-
-def make_pie_chart(
-    df, 
-    category_field, 
-    value_field="Count", 
-    height=300, 
-    width=300, 
-    colors=["#363062", "#4A90E2","#E94F37"]
-):
-    """Pie chart showing relative frequencies with absolute counts in tooltip and custom colors."""
-    df = df.copy()
-    df["Relative"] = df[value_field] / df[value_field].sum()
-
-    return (
-        alt.Chart(df)
-        .mark_arc()
-        .encode(
-            theta=alt.Theta("Relative", type="quantitative", stack=True),
-            color=alt.Color(
-                category_field,
-                type="nominal",
-                legend=alt.Legend(title=category_field),
-                scale=alt.Scale(range=colors)  # 🎨 custom colors
-            ),
-            tooltip=[
-                alt.Tooltip(category_field, title=category_field),
-                alt.Tooltip("Relative", type="quantitative", format=".1%", title="Relative (%)"),
-                alt.Tooltip(value_field, type="quantitative", title="Absolute")
-            ]
-        )
-        .properties(height=height, width=width)
-    )
 
 
 def make_line_chart(df, x_field="Month", y_field="Count", height=300, width=500):
