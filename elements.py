@@ -1,242 +1,261 @@
-# app.py
+# elements.py
 import streamlit as st
 import pandas as pd
 import altair as alt
 from data_loader import load_and_clean_multiple, AGE_ORDER
+import elements as el
 
 
-###sidebar options 
+# --- File paths ---
+files = {
+    2022: ["data/Pankow_2022.parquet"],
+    2024: ["data/Pankow_2024_part1.parquet", "data/Pankow_2024_part2.parquet"],
+}
 
-def get_sidebar_options(cleaned_df: pd.DataFrame):
-    """Prepare sidebar options for years and libraries."""
-    years = sorted(cleaned_df["Year"].unique().tolist())
-    libraries = sorted(cleaned_df["Library"].dropna().unique().tolist())
-    return years, libraries
+# --- Page config ---
+st.set_page_config(
+    page_title="Pankow Libraries: Data Explorer",
+    layout="wide"
+)
 
+# --- Title + Intro ---
+st.markdown("<h1>Pankow Libraries: Interactive Data Explorer</h1>", unsafe_allow_html=True)
 
+st.markdown(
+    """
+   Curious about what people take home from public libraries? Or who’s flocking to the libraries — and when shelves get the busiest? 
+   Dive into this dashboard to explore borrowing data from the eight public libraries in Berlin’s Pankow district. 
+    """,
+    unsafe_allow_html=True
+)
 
-## Number of total Libraries, Borrowings and Renewals 
+st.markdown(
+    """
+    <p style='color:#6E6E6E; font-size:13px; margin-bottom:0px;'>
+    Use the filters on the left to select or deselect libraries.  
+    Choose one year to explore — only that dataset will be loaded into memory!
+    </p>
+    """,
+    unsafe_allow_html=True
+)
 
-def show_kpis(df_filtered):
-    """Return KPI values (libraries, borrowings, renewals)."""
-    total_borrowings = (df_filtered["Type of Transaction"] == "A").sum()
-    total_renewals   = (df_filtered["Type of Transaction"] == "T").sum()
-    num_libraries    = df_filtered["Library"].nunique()
-    return num_libraries, total_borrowings, total_renewals
+st.markdown("---")
 
+# -------------------
+# Sidebar: Year selection (SINGLE CHOICE)
+# -------------------
+year_selected = st.sidebar.radio(
+    "Select year to explore:",
+    options=[2022, 2024],
+    index=1,   # default = 2024
+)
 
-def show_dataframe(df_filtered):
-    """Render cleaned borrowings dataframe."""
-    st.dataframe(
+# -------------------
+# Caching per year
+# -------------------
+@st.cache_data(ttl=3600, show_spinner=False)
+def cached_load_and_clean(year: int, paths: list) -> pd.DataFrame:
+    """Load and clean data for a single year only."""
+    return load_and_clean_multiple({year: paths})
+
+# -------------------
+# Load dataset for selected year
+# -------------------
+with st.spinner(f"Loading library data for {year_selected}..."):
+    cleaned_df = cached_load_and_clean(year_selected, files[year_selected])
+
+# -------------------
+# Sidebar: Library filter (now based on cleaned_df)
+# -------------------
+years, libraries = el.get_sidebar_options(cleaned_df)
+
+libraries_selected = st.sidebar.multiselect(
+    "Select library/libraries to view:",
+    options=libraries,
+    default=libraries,
+    label_visibility="visible",
+    placeholder="Choose libraries...",
+    key="library_multiselect",
+    help="Pick one or more libraries to filter the data",
+)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    "Please head over to the [Berlin Open Data Portal]"
+    "(https://daten.berlin.de/datensaetze/ausleihen-in-offentlichen-bibliotheken-in-pankow-2022) "
+    "to get more information about the datasets and download the raw files."
+)
+
+# -------------------
+# Apply filters (now only one year, no isin!)
+# -------------------
+df_filtered = cleaned_df[
+    (cleaned_df["Year"] == year_selected) &
+    (cleaned_df["Library"].isin(libraries_selected))
+]
+
+# --- KPI Layout, KPI and Dataframe imported from charts_lists_frames.py  ---
+spacing, col_left, col_right = st.columns([0.1, 1, 5])
+
+with col_left:
+    num_libraries, total_borrowings, total_renewals = el.show_kpis(df_filtered)
+    st.metric(" ", " ")
+    st.metric("Libraries", f"{num_libraries}")
+    st.metric("Borrowings", f"{total_borrowings:,}".replace(",", "."))
+    st.metric("Renewals", f"{total_renewals:,}".replace(",", "."))
+
+with col_right:
+    # Subset borrowings
+    df_display = (
         df_filtered[df_filtered["Type of Transaction"] == "A"]
         .dropna(subset=["Title"])
         .drop(columns=["Type of Transaction"], errors="ignore")
         .assign(Year=df_filtered["Year"].astype(str))
-        .reset_index(drop=True)
+        .reset_index(drop=True)   # reset index
     )
+
+    # Take a random sample of up to 100 rows
+    if len(df_display) > 50:
+        df_display = df_display.sample(n=50, random_state=None).reset_index(drop=True)
+    else:
+        df_display = df_display.sample(frac=1, random_state=None).reset_index(drop=True)
+
+    # Hide the index by dropping it
+    st.dataframe(df_display.style.hide(axis="index"))
+
+    st.markdown(
+        """
+        <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
+        This is a sample of 50 randomly chosen borrowings from the subset you created based on your selections.  
+        The charts you see below show borrowings only. Renewals and failed transactions are excluded. The datasets were cleaned and translated by the author of this app.    
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# --- Seperation line --- 
+st.markdown("---")
+
+# -------------------
+# Input for Lists and Charts 
+# -------------------
+
+# --- Filtered subset for Borrowings only  ---
+borrowings = df_filtered[df_filtered["Type of Transaction"] == "A"]
+
+# --- Lists ---
+books_list, dvds_list, cds_list, authors_list = el.make_lists(borrowings)
+
+# --- Charts ---
+media_chart   = el.make_media_chart(borrowings)
+genre_chart   = el.make_genre_chart(borrowings)
+target_chart  = el.make_target_chart(borrowings)
+age_chart     = el.make_age_chart(borrowings)
+user_chart    = el.make_user_chart(borrowings)
+library_chart = el.make_library_chart(borrowings)
+month_chart   = el.make_month_chart(borrowings)
+gender_chart = el.make_gender_chart(borrowings)
+
+
+
+# -------------------
+# Row 1 → Demographics (who borrows?)
+# -------------------
+col4, space, col5, space, col6 = st.columns([1, 0.1, 1.5, 0.1, 1.5])
+
+with col4:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 Authors ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    for author in authors_list:
+        st.markdown(f"<p style='color:#363062; font-size:14px;'>{author}</p>", unsafe_allow_html=True)
+
+with col5:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Target Group ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(target_chart, use_container_width=True)
+
+with col6:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Gender ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(gender_chart, use_container_width=True)
+
+st.markdown("---")
+
+
+
+
+# -------------------
+# Row 2 → Collection / Materials
+# -------------------
+col1, space,  col3, space, col2,= st.columns([1, 0.1, 1.5, 0.1, 1.5])
+
+with col1:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 Books ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    for book in books_list:
+        st.markdown(f"<p style='color:#363062; font-size:14px;'>{book}</p>", unsafe_allow_html=True)
+
+
+with col3:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Genre ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(genre_chart, use_container_width=True)
+
+with col2:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Media Type ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(media_chart, use_container_width=True)
 
     
-# --- Helper functions ---
-def format_years(years: list) -> str:
-    if not years:
-        return "No years selected"
-    if len(years) == 1:
-        return str(years[0])
-    return ", ".join(map(str, years[:-1])) + f", {years[-1]}"
-
-def format_libraries(libraries: list, max_display: int = 2) -> str:
-    if not libraries:
-        return "No libraries selected"
-    if len(libraries) <= max_display:
-        return ", ".join(libraries)
-    return ", ".join(libraries[:max_display]) + f" … +{len(libraries) - max_display} more"
-
-def normalize_author(name: str) -> str:
-    if "," in name:
-        parts = [p.strip() for p in name.split(",", 1)]
-        return f"{parts[1]} {parts[0]}"
-    return name.strip()
+st.markdown("---")
 
 
 
 
-# --- Top items by media ---
-def top_items_by_media(df, media_type, n=5):
-    filtered = df[df["Media Type"] == media_type]
-    counts = (
-        filtered.groupby(["Title", "Author"], observed=True)
-        .size()
-        .reset_index(name="Borrow Count")
-    )
-    return counts.sort_values("Borrow Count", ascending=False).head(n)
+# -------------------
+# Row 3 → Access / Formats
+# -------------------
+col7, space, col8, space, col9 = st.columns([1, 0.1, 1.5, 0.1, 1.5])
 
-def make_lists(borrowings_valid):
-    """Return top books, dvds, cds, authors as lists of strings."""
-    books = [row["Title"] for _, row in top_items_by_media(borrowings_valid, "Book").iterrows()]
-    dvds  = [row["Title"] for _, row in top_items_by_media(borrowings_valid, "DVD").iterrows()]
-    cds   = [row["Title"] for _, row in top_items_by_media(borrowings_valid, "CD").iterrows()]
+with col7:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 CDs ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    for cd in cds_list:
+        st.markdown(f"<p style='color:#363062; font-size:14px;'>{cd}</p>", unsafe_allow_html=True)
 
-    author_counts = (
-        borrowings_valid.groupby("Author", observed=True)
-        .size()
-        .reset_index(name="Borrow Count")
-    )
-    top_authors = author_counts.sort_values("Borrow Count", ascending=False).head(5)
-    authors = [normalize_author(row["Author"]) for _, row in top_authors.iterrows()]
+with col8:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Age Group ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(age_chart, use_container_width=True)
 
-    return books, dvds, cds, authors
+with col9:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by User Group ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(user_chart, use_container_width=True)
+
+st.markdown("---")
 
 
+# -------------------
+# Row 4 → Place + Time
+# -------------------
+col10, space, col11, space, col12 = st.columns([1, 0.1, 1.5, 0.1, 1.5])
 
+with col10:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Top 5 DVDs ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    for dvd in dvds_list:
+        st.markdown(f"<p style='color:#363062; font-size:14px;'>{dvd}</p>", unsafe_allow_html=True)
 
-def make_bar_chart(df, category_field, color="#363062", sort="-y", height=300, width=300, order=None):
-    """Standard vertical bar chart showing relative frequencies."""
-    df = df.copy()
-    df["Relative"] = df["Count"] / df["Count"].sum()
+with col11:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Library ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(library_chart, use_container_width=True)
 
-    return (
-        alt.Chart(df)
-        .mark_bar(color=color)
-        .encode(
-            x=alt.X(category_field,
-                    type="nominal",
-                    sort=order or sort,
-                    title=None,
-                    axis=alt.Axis(labelColor="#363062")),
-            y=alt.Y("Relative",
-                    type="quantitative",
-                    axis=alt.Axis(format="%", title=None, labelColor="#363062"),
-                    scale=alt.Scale(domain=[0, 1])),
-            tooltip=[
-                alt.Tooltip(category_field, title=category_field),
-                alt.Tooltip("Relative", format=".1%", title="Relative (%)"),
-                alt.Tooltip("Count", title="Absolute Borrowings")
-            ]
-        )
-        .properties(height=height, width=width)
-    )
+with col12:
+    st.markdown(f"<div style='color:#363062; font-size:16px; font-weight:bold;'>Borrowings by Month ({el.format_year(year_selected)})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:#6E6E6E; font-size:12px; margin-bottom:12px;'>{el.format_libraries(libraries_selected)}</div>", unsafe_allow_html=True)
+    st.altair_chart(month_chart, use_container_width=True)
 
-
-def make_horizontal_bar_chart(df, category_field, color="#363062", sort="-x", height=300, width=300, order=None):
-    """Horizontal bar chart showing relative frequencies."""
-    df = df.copy()
-    df["Relative"] = df["Count"] / df["Count"].sum()
-
-    return (
-        alt.Chart(df)
-        .mark_bar(color=color)
-        .encode(
-            y=alt.Y(category_field,
-                    type="nominal",
-                    sort=order or sort,
-                    title=None,
-                    axis=alt.Axis(labelColor="#363062")),
-            x=alt.X("Relative",
-                    type="quantitative",
-                    axis=alt.Axis(format="%", title=None, labelColor="#363062"),
-                    scale=alt.Scale(domain=[0, 1])),
-            tooltip=[
-                alt.Tooltip(category_field, title=category_field),
-                alt.Tooltip("Relative", type="quantitative", format=".1%", title="Relative (%)"),
-                alt.Tooltip("Count", type="quantitative", title="Absolute")
-            ]
-        )
-        .properties(height=height, width=width)
-    )
-
-
-
-def make_pie_chart(
-    df, 
-    category_field, 
-    value_field="Count", 
-    height=300, 
-    width=300, 
-    colors=["#363062", "#4A90E2","#E94F37"]
-):
-    """Pie chart showing relative frequencies with absolute counts in tooltip and custom colors."""
-    df = df.copy()
-    df["Relative"] = df[value_field] / df[value_field].sum()
-
-    return (
-        alt.Chart(df)
-        .mark_arc()
-        .encode(
-            theta=alt.Theta("Relative", type="quantitative", stack=True),
-            color=alt.Color(
-                category_field,
-                type="nominal",
-                legend=alt.Legend(title=category_field),
-                scale=alt.Scale(range=colors)  # 🎨 custom colors
-            ),
-            tooltip=[
-                alt.Tooltip(category_field, title=category_field),
-                alt.Tooltip("Relative", type="quantitative", format=".1%", title="Relative (%)"),
-                alt.Tooltip(value_field, type="quantitative", title="Absolute")
-            ]
-        )
-        .properties(height=height, width=width)
-    )
-
-
-def make_line_chart(df, x_field="Month", y_field="Count", height=300, width=500):
-    """Line chart for monthly data with white dots, absolute values on y-axis, and relative % in tooltip."""
-    month_order = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ]
-
-    df = df.copy()
-    df["Relative"] = df[y_field] / df[y_field].sum()
-
-    base = alt.Chart(df).encode(
-        x=alt.X(x_field, type="nominal", sort=month_order,
-                title=None, axis=alt.Axis(labelColor="#363062")),
-        y=alt.Y(y_field, type="quantitative",
-                title=None, axis=alt.Axis(labelColor="#363062")),
-        tooltip=[
-            alt.Tooltip(x_field, title="Month"),
-            alt.Tooltip(y_field, type="quantitative", title="Absolute Borrowings"),
-            alt.Tooltip("Relative", type="quantitative", format=".1%", title="Relative (%)"),
-        ]
-    )
-
-    line = base.mark_line(color="#363062")
-    points = base.mark_point(color="#FFFFFF", size=60, stroke="#363062", strokeWidth=0.5)
-
-    return (line + points).properties(height=height, width=width)
-
-
-
-
-def make_media_chart(borrowings):
-    df = borrowings.groupby("Media Type", observed=True).size().reset_index(name="Count")
-    return make_horizontal_bar_chart(df, "Media Type")
-
-def make_genre_chart(borrowings):
-    df = borrowings.groupby("Genre", observed=True).size().reset_index(name="Count")
-    return make_horizontal_bar_chart(df, "Genre")
-
-def make_target_chart(borrowings):
-    df = borrowings.groupby("Target Group", observed=True).size().reset_index(name="Count")
-    return make_horizontal_bar_chart(df, "Target Group")
-
-def make_gender_chart(borrowings):
-    df = borrowings.groupby("Gender", observed=True).size().reset_index(name="Count")
-    return make_horizontal_bar_chart(df, "Gender")
-
-def make_age_chart(borrowings):
-    df = borrowings.groupby("Age Group", observed=True).size().reset_index(name="Count")
-    return make_bar_chart(df, "Age Group", order=AGE_ORDER)
-
-def make_user_chart(borrowings):
-    df = borrowings.groupby("User Group", observed=True).size().reset_index(name="Count")
-    return make_horizontal_bar_chart(df, "User Group")
-
-def make_library_chart(borrowings):
-    df = borrowings.groupby("Library", observed=True).size().reset_index(name="Count")
-    return make_horizontal_bar_chart(df, "Library")
-
-def make_month_chart(borrowings):
-    df = borrowings.groupby("Month", observed=True).size().reset_index(name="Count")
-    return make_line_chart(df, "Month")
+st.markdown("---")
