@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -8,8 +7,8 @@ import elements as el
 
 # --- File paths ---
 files = {
-    2022: ["Pankow_2022.parquet"],
-    2024: ["Pankow_2024_part1.parquet", "Pankow_2024_part2.parquet"],
+    2022: ["data/Pankow_2022.parquet"],
+    2024: ["data/Pankow_2024_part1.parquet", "data/Pankow_2024_part2.parquet"],
 }
 
 # --- Page config ---
@@ -33,7 +32,7 @@ st.markdown(
     """
     <p style='color:#6E6E6E; font-size:13px; margin-bottom:0px;'>
     Use the filters on the left to select or deselect libraries.  
-    Choose one year to explore — only that dataset will be loaded into memory!
+    Choose one year to explore — data and charts update dynamically upon your selection!
     </p>
     """,
     unsafe_allow_html=True
@@ -127,13 +126,12 @@ with col_left:
     num_libraries, total_borrowings, total_renewals = el.show_kpis(df_filtered)
     st.metric(" ", " ")
     
-    # 🟢 Smarter display logic for the "Libraries" KPI
     if choice == "All":
         lib_label = "8 Pankow District Libraries"
     elif len(libraries_selected) == 1:
         lib_label = libraries_selected[0]
     else:
-        lib_label = f"{len(libraries_selected)} libraries"
+        lib_label = f"{len(libraries_selected)} Libraries"
     
     st.metric("Library/ Libraries", lib_label)
     st.metric("Borrowings", f"{total_borrowings:,}".replace(",", "."))
@@ -161,8 +159,7 @@ with col_right:
     st.markdown(
         """
         <p style='color:#6E6E6E; font-size:13px; margin-top:8px;'>
-        This is a sample of 50 randomly chosen borrowings from the subset you created based on your selections.  
-        The charts you see below show borrowings only. Renewals and failed transactions are excluded. The datasets were cleaned and translated by the author of this app.    
+        Above, you see a sample of 50 randomly chosen borrowings from the subset you created based on your selections. This should give you a good impression of how the data looks like. Below, the charts show borrowings only; renewals and failed transactions are excluded. The datasets were cleaned and translated by the author of this app.    
         </p>
         """,
         unsafe_allow_html=True
@@ -314,5 +311,7 @@ if choice == "All Libraries":
         st.altair_chart(library_chart, use_container_width=True)
 
 st.markdown("---")
+
+
 
 
