@@ -86,7 +86,7 @@ def cached_load_and_clean(year: int, paths: list) -> pd.DataFrame:
 # -------------------
 # Load dataset for selected year
 # -------------------
-with st.spinner(f"Loading library data for {year_selected}..."):
+with st.spinner(f"Loading exciting library data from {year_selected}..."):
     cleaned_df = cached_load_and_clean(year_selected, files[year_selected])
 
 # -------------------
@@ -311,7 +311,5 @@ if choice == "All Libraries":
         st.altair_chart(library_chart, use_container_width=True)
 
 st.markdown("---")
-
-
 
 
