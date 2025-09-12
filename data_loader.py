@@ -65,8 +65,8 @@ LIBRARIES = {
     650: "W.-Schnurre-Bibliothek",
     462: "J.-Korczak-Bibliothek",
     655: "Bibliothek Karow",
-    457: "Heinrich-Böll-Bibliothek",
-    972: "Kurt-Tucholsky-Bibliothek",
+    457: "H.-Böll-Bibliothek",
+    972: "K.-Tucholsky-Bibliothek",
     471: "Bibliothek Buch",
 }
 
