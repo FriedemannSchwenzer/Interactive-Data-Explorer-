@@ -61,13 +61,13 @@ TARGET_GROUP_TRANSLATION = {
 
 LIBRARIES = {
     975: "Bibliothek Am Wasserturm",
-    971: "Bettina-von-Arnim-Bibliothek",
-    650: "Wolfdietrich-Schnurre-Bibliothek",
+    971: "B.-von-Arnim-Bibliothek",
+    650: "W.-Schnurre-Bibliothek",
     462: "Janusz-Korczak-Bibliothek",
-    655: "Stadtteilbibliothek Buch-Karow (Karow)",
+    655: "Stadtteilbibliothek Karow",
     457: "Heinrich-Böll-Bibliothek",
     972: "Kurt-Tucholsky-Bibliothek",
-    471: "Stadtteilbibliothek Buch-Karow (Buch)",
+    471: "Stadtteilbibliothek Buch",
 }
 
 MONTH_NAME_MAP = {
