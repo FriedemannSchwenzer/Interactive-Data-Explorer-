@@ -63,11 +63,11 @@ LIBRARIES = {
     975: "Bibliothek Am Wasserturm",
     971: "B.-von-Arnim-Bibliothek",
     650: "W.-Schnurre-Bibliothek",
-    462: "Janusz-Korczak-Bibliothek",
-    655: "Stadtteilbibliothek Karow",
+    462: "J.-Korczak-Bibliothek",
+    655: "Bibliothek Karow",
     457: "Heinrich-Böll-Bibliothek",
     972: "Kurt-Tucholsky-Bibliothek",
-    471: "Stadtteilbibliothek Buch",
+    471: "Bibliothek Buch",
 }
 
 MONTH_NAME_MAP = {
